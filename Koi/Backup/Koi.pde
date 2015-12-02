@@ -1,6 +1,6 @@
 /* Benjamin Espey
- * Inspiration from -
- * Daniel Shiffman
+ * Inspiration from:
+ *     Daniel Shiffman
  */
 
 float zoom;
