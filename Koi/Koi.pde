@@ -11,18 +11,20 @@
 
 World world;
 Network nn;
+boolean doDraw;
+boolean debug;
 
 void setup() {
-  size(640, 360);
-  // World starts with 20 creatures
-  // and 20 pieces of food
+  size(1280, 720);
 
-  world = new World(20);
+  world = new World(200);
+  doDraw = true;
+  debug = true;
   //smooth();
 }
 
 void draw() {
-  background(255);
+  background(world.getSkyColor());
   world.run();
 }
 
@@ -33,4 +35,12 @@ void mousePressed() {
 
 void mouseDragged() {
   world.birth(mouseX,mouseY); 
+}
+
+void keyReleased() {
+  if (key == ' ') {
+    doDraw = !doDraw;
+  } else if (key == 'd') {
+    debug = !debug;
+  }
 }

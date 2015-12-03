@@ -289,12 +289,14 @@ public class Network {
     int i;
 
     for (i = 0; i < neuronCount; i++) {
-      thresholds[i] = 0.5 - (Math.random());
+      //thresholds[i] = 0.5 - (Math.random());
+      thresholds[i] = random(-0.5,0.5);
       thresholdDelta[i] = 0;
       accThresholdDelta[i] = 0;
     }
     for (i = 0; i < matrix.length; i++) {
-      matrix[i] = 0.5 - (Math.random());
+      //matrix[i] = 0.5 - (Math.random());
+      matrix[i] = random(-0.5,0.5);
       matrixDelta[i] = 0;
       accMatrixDelta[i] = 0;
     }

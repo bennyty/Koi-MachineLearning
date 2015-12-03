@@ -73,7 +73,7 @@ class Predator {
     //ellipse(location.x,location.y,r,r);
     float theta = velocity.heading() + PI/2;
     fill(200,100);
-    stroke(0);
+    stroke(204, 102, 0);
     pushMatrix();
     translate(location.x,location.y);
     rotate(theta);
