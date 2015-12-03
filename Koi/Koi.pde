@@ -34,5 +34,3 @@ void mousePressed() {
 void mouseDragged() {
   world.birth(mouseX,mouseY); 
 }
-
-
