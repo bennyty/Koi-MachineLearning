@@ -3,8 +3,9 @@
 class EvolvedCreature {
   //Neural Network stuff
   int numFeelers = 8;
-  int inputCount = 2 + (numFeelers*2); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
-  int hiddenCount = 20; // Lol idk
+  //int inputCount = 2 + (numFeelers*2); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
+  int inputCount = 1 + (numFeelers); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
+  int hiddenCount = 3; // Lol idk
   int outputCount = 2; // Left/Right + Move/Stay
   double learnRate = .5; // Lol idk
   double momentum = .5; // Lol idk
@@ -20,6 +21,7 @@ class EvolvedCreature {
   int health;
 
   float fitness;
+  int foodsEaten;
 
   Network brain;
 
@@ -37,6 +39,7 @@ class EvolvedCreature {
     location = l.get();
     r = 5;
     lifetime = 0;
+    foodsEaten = 0;
     birthday = millis();
     health = 1000;
     fitness = 0;
@@ -55,8 +58,13 @@ class EvolvedCreature {
   }
 
   // FITNESS FUNCTION 
-  void calcFitness() {
-    fitness = lifetime;
+  void calcFitness(Food f) {
+    float dist = Float.MAX_VALUE;
+    for(PVector p : f) {
+      float d = PVector.dist(location, p);
+      if (d < dist) dist = d;
+    }
+    fitness = (1/dist) + foodsEaten;
   }
 
   // Run in relation to all the obstacles
@@ -66,25 +74,35 @@ class EvolvedCreature {
     if(doDraw) {
       display();
     }
-    double[] senses = new double[inputCount]; //<>//
-    PVector probe = new PVector(0,3*r);
+    double[] senses = new double[inputCount];
+    PVector probe = new PVector(0,5*r);
     for (int i = 0; i < numFeelers; ++i) {
       senses[i] = 0;
       probe.rotate(0.785398);
-      if (debug) {
-        PVector elli = PVector.add(probe, location);
-        ellipse(elli.x, elli.y, 2*r,2*r);
-      }
-      for (Predator o : w.getPredators()) {
-        senses[i] = (PVector.dist(PVector.add(probe, location), o.location) < 2*r)? senses[i]:1;
-      }
+      PVector shiftedProbe = PVector.add(probe, location);
       for (Object o : w.getFood().getFood()) {
         PVector f = (PVector) o;
-        senses[i+numFeelers] = (PVector.dist(PVector.add(probe, location), f) < 2*r)? senses[i+8]:1;
+        senses[i] = (PVector.dist(shiftedProbe, f) < 4*r) ? 1:senses[i];
+      }
+      //for (Predator o : w.getPredators()) {
+        //senses[i+numFeelers] = (PVector.dist(shiftedProbe, o.location) < 4*r)? 1:senses[i+numFeelers];
+      //}
+      if (debug && (senses[i] == 1)) {
+        ellipse(shiftedProbe.x, shiftedProbe.y, 4*r,4*r);
       }
     }
-    senses[2*numFeelers]= health;
-    senses[2*numFeelers + 1] = w.getDayTime();
+    /*
+     *String sensesString = "";
+     *for (int i = 0; i < numFeelers; ++i) {
+     *  sensesString += senses[i];
+     *}
+     *if (sensesString == "0.00.00.00.00.00.00.00.0") {
+     *  System.out.println(sensesString);
+     *}
+     */
+    senses[numFeelers] = health;
+    //senses[2*numFeelers] = health;
+    //senses[2*numFeelers + 1] = w.getDayTime();
 
     lifetime = millis() - birthday;
 
@@ -124,7 +142,7 @@ class EvolvedCreature {
     velocity.limit(maxspeed);
     location.add(velocity);
     acceleration.mult(0);
-    velocity.mult(.99);
+    velocity.mult(.95);
   }
 
   void eat(Food f) {
@@ -136,6 +154,8 @@ class EvolvedCreature {
       // If we are, juice up our strength!
       if (d < r) {
         health += 100; 
+        r++;
+        foodsEaten++;
         food.remove(i);
       }
     }

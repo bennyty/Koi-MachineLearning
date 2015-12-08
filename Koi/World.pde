@@ -2,15 +2,30 @@
 // Daniel Shiffman
 // http://natureofcode.com
 
-// Evolution EcoSystem
+// Evolution Ecosystem
 
 // The World we live in Has bloops and food
+
+
 class World {
 
   ArrayList<EvolvedCreature> creatures;
   ArrayList<Predator> predators;
+  Queue<EvolvedCreature> hallOfFame;
   Food food;
-  int initNum;
+  int initialNumberOfCreatures;
+  public Comparator<EvolvedCreature> EVCComparator = new Comparator<EvolvedCreature>() {
+			@Override
+			public int compare(EvolvedCreature l1, EvolvedCreature l2) {
+				float w1 = l1.getFitness();
+				float w2 = l2.getFitness();
+				if (w1 - w2 > 0)
+					return 1;
+				if (w1 - w2 < 0)
+					return -1;
+				return 0;
+			}
+		};
 
   int generation;
   float generationAverageLifeTime;
@@ -29,11 +44,11 @@ class World {
 
   // Constructor
   World(int num) {
-    initNum = num;
+    initialNumberOfCreatures = num;
     // Start with initial food and creatures
-    food = new Food(num);
     creatures = new ArrayList<EvolvedCreature>();
     predators = new ArrayList<Predator>();
+    hallOfFame = new PriorityQueue<EvolvedCreature>(EVCComparator);
     for (int i = 0; i < num; i++) {
       PVector l = new PVector(random(width),random(height));
       PVector v = new PVector(random(width),random(height));
@@ -110,8 +125,9 @@ class World {
       if (b.dead()) {
         generationAverageLifeTime += b.lifetime;
         generationDeaths++;
+        hallOfFame.add(b);
         creatures.remove(i);
-        food.add(b.location);
+        //food.add(b.location);
       }
       // Perhaps this bloop would like to make a baby?
       EvolvedCreature child = b.reproduce();
@@ -119,16 +135,21 @@ class World {
     }
 
     //Repopulate from the survivors if population gets low
-    if (creatures.size()<=initNum*.9) {
+    if (creatures.size()<=initialNumberOfCreatures*.5) {
       outputFile.println(generation + ":" + generationAverageLifeTime/generationDeaths);
       outputFile.flush();
       //outputFile.close();
       generationDeaths = 0;
       generationAverageLifeTime = 0;
       generation++;
-      while (creatures.size() <= initNum) {
-        for (int i = creatures.size() - 1; i >= 0; i--) {
-          EvolvedCreature child = creatures.get(i).forceBreed();
+      while (creatures.size() <= initialNumberOfCreatures) {
+        //for (int i = creatures.size() - 1; i >= 0; i--) {
+          //EvolvedCreature child = creatures.get(i).forceBreed();
+          //if (child != null) creatures.add(child);
+        //}
+        int QSize = hallOfFame.size() < 5 ? hallOfFame.size() : 5;
+        for (int i = 0; i < QSize; i++) {
+          EvolvedCreature child = hallOfFame.poll().forceBreed();
           if (child != null) creatures.add(child);
         }
       }

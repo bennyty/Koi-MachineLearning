@@ -8,6 +8,8 @@
 // The bigger they are, the easier it is to land on food
 // The bigger they are, the slower they are to find food
 // When the creatures die, food is left behind
+import java.io.StringWriter;
+import java.util.*;
 
 World world;
 Network nn;
@@ -17,7 +19,8 @@ boolean debug;
 void setup() {
   size(1280, 720);
 
-  world = new World(200);
+  world = new World(100);
+  world.food = new Food(75);
   doDraw = true;
   debug = true;
   //smooth();
@@ -25,7 +28,17 @@ void setup() {
 
 void draw() {
   background(world.getSkyColor());
-  world.run();
+  try {
+    world.run();
+  } catch (Exception e){
+    System.out.println(e.getMessage());
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    pw.flush();
+    String stackTrace = sw.toString();
+    System.out.println(stackTrace);
+  }
 }
 
 // We can add a creature manually if we so desire

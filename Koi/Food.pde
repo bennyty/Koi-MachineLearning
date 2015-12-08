@@ -34,6 +34,7 @@ class Food {
     // There's a small chance food will appear randomly
     if (random(1) < 0.001) {
        food.add(new PVector(random(width),random(height))); 
+       //food.remove(random(0,food.size()-1)); 
     }
   }
   
