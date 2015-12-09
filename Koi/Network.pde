@@ -329,7 +329,7 @@ public class Network {
   public double[] mutate(float m, double[] genes) {
     for (int i = 0; i < genes.length; i++) {
       if (random(1) < m) {
-        genes[i] = random(0,1);
+        genes[i] = random(-1,1);
       }
     }
     return genes;

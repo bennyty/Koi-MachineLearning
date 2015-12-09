@@ -1,8 +1,12 @@
 // EvolvedCreature class -- this is just like our Boid / Particle class
 // the only difference is that it has DNA & fitness
+import java.text.DecimalFormat;
+import java.math.RoundingMode;
+
 class EvolvedCreature {
   //Neural Network stuff
-  int numFeelers = 8;
+  //int numFeelers = 8;
+  int numFeelers = 5;
   //int inputCount = 2 + (numFeelers*2); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
   int inputCount = 1 + (numFeelers); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
   int hiddenCount = 3; // Lol idk
@@ -30,19 +34,25 @@ class EvolvedCreature {
   float maxforce = 1.0;
 
   int predatorPenalty = 50;
-  int agingPenalty = 5;
+  int agingPenalty = 4;
+
+  PVector previousLocation;
+  PVector birthPlace;
+  float totalDistanceCovered;
 
   //constructor
   EvolvedCreature(PVector l) {
     acceleration = new PVector();
-    velocity = new PVector(random(-10,10), random(-10,10));
+    velocity = new PVector(random(-1,1), random(-1,1));
     location = l.get();
+    birthPlace = location.get();
     r = 5;
     lifetime = 0;
     foodsEaten = 0;
     birthday = millis();
     health = 1000;
     fitness = 0;
+    totalDistanceCovered = 0;
     brain = new Network(inputCount,hiddenCount,outputCount,learnRate,momentum);
   }
 
@@ -59,12 +69,14 @@ class EvolvedCreature {
 
   // FITNESS FUNCTION 
   void calcFitness(Food f) {
-    float dist = Float.MAX_VALUE;
-    for(PVector p : f) {
+    float distanceToNearestFood = Float.MAX_VALUE;
+    float distanceFromBirthplace = PVector.dist(location, birthPlace);
+    totalDistanceCovered += PVector.dist(location, previousLocation);
+    for(PVector p : f.getFood()) {
       float d = PVector.dist(location, p);
-      if (d < dist) dist = d;
+      if (d < distanceToNearestFood) distanceToNearestFood = d;
     }
-    fitness = (1/dist) + foodsEaten;
+    fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 300*foodsEaten;
   }
 
   // Run in relation to all the obstacles
@@ -75,13 +87,16 @@ class EvolvedCreature {
       display();
     }
     double[] senses = new double[inputCount];
-    PVector probe = new PVector(0,5*r);
+    //PVector probe = PVector.mult(velocity, 1);
+    PVector probe = velocity.copy();
+    probe.normalize();
+    probe.mult(5*r);
+    probe.rotate(-1*0.785398*3);
     for (int i = 0; i < numFeelers; ++i) {
       senses[i] = 0;
       probe.rotate(0.785398);
       PVector shiftedProbe = PVector.add(probe, location);
-      for (Object o : w.getFood().getFood()) {
-        PVector f = (PVector) o;
+      for (PVector f : w.getFood().getFood()) {
         senses[i] = (PVector.dist(shiftedProbe, f) < 4*r) ? 1:senses[i];
       }
       //for (Predator o : w.getPredators()) {
@@ -100,7 +115,7 @@ class EvolvedCreature {
      *  System.out.println(sensesString);
      *}
      */
-    senses[numFeelers] = health;
+    senses[numFeelers] = totalDistanceCovered;
     //senses[2*numFeelers] = health;
     //senses[2*numFeelers + 1] = w.getDayTime();
 
@@ -109,6 +124,7 @@ class EvolvedCreature {
     double[] directions = brain.computeOutputs(senses);
     //System.out.println(directions[0] + ", " + directions[1]);
     update(directions[0]<0.5?true:false,directions[1]<0.5?true:false);
+    calcFitness(w.getFood());
 
     // If I hit an edge or an obstacle
     borders();
@@ -126,13 +142,16 @@ class EvolvedCreature {
     //System.out.println(move + " " + turnRight);
     // A little Reynolds steering here
     if (move) {
-      PVector desired = PVector.mult(velocity, 1);
+      //PVector desired = PVector.mult(velocity, 1);
+      PVector desired = velocity.copy();
       desired.setMag(1);
       desired.rotate(turnRight ? -0.785398 : 0.785398);
       desired.mult(maxspeed);
 
-      line(location.x, location.y, location.x + velocity.x, location.y + velocity.y);
-      line(location.x, location.y, location.x + desired.x, location.y + desired.y);
+      if(debug) {
+        line(location.x, location.y, location.x + velocity.x, location.y + velocity.y);
+        line(location.x, location.y, location.x + desired.x, location.y + desired.y);
+      }
 
       PVector steer = PVector.sub(desired,velocity);
       acceleration.add(steer);
@@ -140,9 +159,11 @@ class EvolvedCreature {
     }
     velocity.add(acceleration);
     velocity.limit(maxspeed);
+    //previousLocation = PVector.mult(location, 1);
+    previousLocation = location.copy();
     location.add(velocity);
     acceleration.mult(0);
-    velocity.mult(.95);
+    velocity.mult(0.9);
   }
 
   void eat(Food f) {
@@ -154,7 +175,7 @@ class EvolvedCreature {
       // If we are, juice up our strength!
       if (d < r) {
         health += 100; 
-        r++;
+        //r++;
         foodsEaten++;
         food.remove(i);
       }
@@ -188,7 +209,7 @@ class EvolvedCreature {
     return health <= 0 ? true : false;
   }
 
-  // At any moment there is a teeny, tiny chance a bloop will reproduce
+  // At any moment there is a teeny, tiny chance a creature will reproduce
   EvolvedCreature reproduce() {
     // asexual reproduction
     if (random(1) < 0.0005) {
@@ -210,9 +231,41 @@ class EvolvedCreature {
     // Child is exact copy of single parent
     double[] m = brain.getMatrix();
     double[] t = brain.getThresholds();
+    DecimalFormat df = new DecimalFormat("#.##");
+    df.setRoundingMode(RoundingMode.CEILING);
+
+/*
+ *    System.out.println("---------------------------");
+ *    System.out.print("m: ");
+ *    for (int i = 0; i < m.length; i++) {
+ *      System.out.print(df.format(m[i]) + ", ");
+ *    }
+ *    System.out.println();
+ *
+ *    System.out.print("t: ");
+ *    for (int i = 0; i < t.length; i++) {
+ *      System.out.print(df.format(t[i]) + ", ");
+ *    }
+ *    System.out.println();
+ *    System.out.println();
+ */
+
     // Child DNA can mutate
     m = brain.mutate(0.10, m);
     t = brain.mutate(0.10, t);
+/*
+ *    System.out.print("mm: ");
+ *    for (int i = 0; i < m.length; i++) {
+ *      System.out.print(df.format(m[i]) + ", ");
+ *    }
+ *    System.out.println();
+ *
+ *    System.out.print("tm: ");
+ *    for (int i = 0; i < t.length; i++) {
+ *      System.out.print(df.format(t[i]) + ", ");
+ *    }
+ *    System.out.println();
+ */
     return new EvolvedCreature(new PVector(random(width),random(height)),m,t);
   }
 
@@ -236,8 +289,8 @@ class EvolvedCreature {
 
   void highlight() {
     stroke(0);
-    fill(255,0,0,100);
-    ellipse(location.x,location.y,16,16);
+    fill(255,0,0,50);
+    ellipse(location.x,location.y,32,32);
 
   }
 

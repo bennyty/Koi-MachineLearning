@@ -6,12 +6,11 @@
 
 // The World we live in Has bloops and food
 
-
 class World {
 
   ArrayList<EvolvedCreature> creatures;
   ArrayList<Predator> predators;
-  Queue<EvolvedCreature> hallOfFame;
+  Set<EvolvedCreature> hallOfFame;
   Food food;
   int initialNumberOfCreatures;
   public Comparator<EvolvedCreature> EVCComparator = new Comparator<EvolvedCreature>() {
@@ -20,9 +19,9 @@ class World {
 				float w1 = l1.getFitness();
 				float w2 = l2.getFitness();
 				if (w1 - w2 > 0)
-					return 1;
-				if (w1 - w2 < 0)
 					return -1;
+				if (w1 - w2 < 0)
+					return 1;
 				return 0;
 			}
 		};
@@ -30,6 +29,7 @@ class World {
   int generation;
   float generationAverageLifeTime;
   int generationDeaths;
+  SortedSet<EvolvedCreature> bestOfGen;
 
   float bigBangTime;
   float startOfTheDay;
@@ -48,7 +48,7 @@ class World {
     // Start with initial food and creatures
     creatures = new ArrayList<EvolvedCreature>();
     predators = new ArrayList<Predator>();
-    hallOfFame = new PriorityQueue<EvolvedCreature>(EVCComparator);
+    hallOfFame = new TreeSet<EvolvedCreature>(EVCComparator);
     for (int i = 0; i < num; i++) {
       PVector l = new PVector(random(width),random(height));
       PVector v = new PVector(random(width),random(height));
@@ -58,6 +58,7 @@ class World {
     startOfTheDay = 0;
     generation = 0;
     generationDeaths = 0;
+    bestOfGen = new TreeSet<EvolvedCreature>(EVCComparator);
     outputFile = createWriter(month() + "-" + day() + "-"  + year() + ":"  + hour() + "-"  + minute() + "-"  + second());
   }
 
@@ -121,21 +122,31 @@ class World {
       EvolvedCreature b = creatures.get(i);
       b.run(this);
       b.eat(food);
+      if (debug) {
+        fill(0);
+        text(b.getFitness(), b.location.x, b.location.y);
+      }
       // If it's dead, kill it and make food
       if (b.dead()) {
         generationAverageLifeTime += b.lifetime;
         generationDeaths++;
         hallOfFame.add(b);
+        //System.out.println("Added: " + b.getFitness());
         creatures.remove(i);
-        //food.add(b.location);
+        food.add(b.location);
       }
+      bestOfGen.add(b);
       // Perhaps this bloop would like to make a baby?
       EvolvedCreature child = b.reproduce();
       if (child != null) creatures.add(child);
     }
+    if (debug) {
+      EvolvedCreature BOG = bestOfGen.first();
+      BOG.highlight();
+    }
 
     //Repopulate from the survivors if population gets low
-    if (creatures.size()<=initialNumberOfCreatures*.5) {
+    if (creatures.size()<=initialNumberOfCreatures*.2) {
       outputFile.println(generation + ":" + generationAverageLifeTime/generationDeaths);
       outputFile.flush();
       //outputFile.close();
@@ -148,11 +159,31 @@ class World {
           //if (child != null) creatures.add(child);
         //}
         int QSize = hallOfFame.size() < 5 ? hallOfFame.size() : 5;
+        TreeSet<EvolvedCreature> tempQ = new TreeSet<EvolvedCreature>(EVCComparator);
+        Iterator<EvolvedCreature> itr = hallOfFame.iterator();
         for (int i = 0; i < QSize; i++) {
-          EvolvedCreature child = hallOfFame.poll().forceBreed();
+          EvolvedCreature parent = itr.next();
+          System.out.print(parent.getFitness()+ " ");
+          tempQ.add(parent);
+
+          EvolvedCreature child = parent.forceBreed();
           if (child != null) creatures.add(child);
         }
+        System.out.println();
+        hallOfFame.clear();
+        hallOfFame = tempQ;
+        PVector l = new PVector(random(width),random(height));
+        PVector v = new PVector(random(width),random(height));
+        creatures.add(new EvolvedCreature(l,v));
+        l = new PVector(random(width),random(height));
+        v = new PVector(random(width),random(height));
+        creatures.add(new EvolvedCreature(l,v));
+        EvolvedCreature BOG = bestOfGen.first();
+        creatures.add(BOG.forceBreed());
+        bestOfGen.remove(BOG);
       }
+      food = new Food(initialNumberOfCreatures);
+      bestOfGen.clear();
     }
 
     displayData();

@@ -15,14 +15,16 @@ World world;
 Network nn;
 boolean doDraw;
 boolean debug;
+boolean looping;
 
 void setup() {
   size(1280, 720);
 
   world = new World(100);
-  world.food = new Food(75);
+  world.food = new Food(200);
   doDraw = true;
   debug = true;
+  looping = true;
   //smooth();
 }
 
@@ -55,5 +57,13 @@ void keyReleased() {
     doDraw = !doDraw;
   } else if (key == 'd') {
     debug = !debug;
+  } else if (key == 's') {
+    if (looping) {
+      looping = !looping;
+      noLoop();
+    } else {
+      looping = !looping;
+      loop();
+    }
   }
 }
