@@ -120,7 +120,8 @@ class World {
       // All bloops run and eat
       EvolvedCreature b = creatures.get(i);
       b.run(this);
-      b.eat(food);
+      //b.eat(food);
+      b.eat(this);
       // If it's dead, kill it and make food
       if (b.dead()) {
         generationAverageLifeTime += b.lifetime;
@@ -152,6 +153,8 @@ class World {
           EvolvedCreature child = hallOfFame.poll().forceBreed();
           if (child != null) creatures.add(child);
         }
+        PVector l = new PVector(random(width),random(height));
+        creatures.add(new EvolvedCreature(l));
       }
       food = new Food(initialNumberOfCreatures);
     }

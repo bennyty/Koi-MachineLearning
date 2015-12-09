@@ -30,7 +30,7 @@ class EvolvedCreature {
   float maxforce = 1.0;
 
   int predatorPenalty = 50;
-  int agingPenalty = 5;
+  int agingPenalty = 3;
   PVector previousLocation;
   PVector birthPlace;
   float totalDistanceCovered;
@@ -38,7 +38,7 @@ class EvolvedCreature {
   //constructor
   EvolvedCreature(PVector l) {
     acceleration = new PVector();
-    velocity = new PVector(random(-10,10), random(-10,10));
+    velocity = new PVector(random(-1,1), random(-1,1));
     location = l.get();
     r = 5;
     lifetime = 0;
@@ -156,7 +156,8 @@ class EvolvedCreature {
     velocity.mult(.95);
   }
 
-  void eat(Food f) {
+  void eat(World w) {
+    Food f = w.getFood();
     ArrayList<PVector> food = f.getFood();
     // Are we touching any food objects?
     for (int i = food.size()-1; i >= 0; i--) {
@@ -168,6 +169,7 @@ class EvolvedCreature {
         r++;
         foodsEaten++;
         food.remove(i);
+        w.creatures.add(forceBreed());
       }
     }
   }
