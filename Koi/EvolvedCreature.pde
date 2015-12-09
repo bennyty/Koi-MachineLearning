@@ -2,7 +2,7 @@
 // the only difference is that it has DNA & fitness
 class EvolvedCreature {
   //Neural Network stuff
-  int numFeelers = 8;
+  int numFeelers = 3;
   //int inputCount = 2 + (numFeelers*2); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
   int inputCount = 1 + (numFeelers); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
   int hiddenCount = 3; // Lol idk
@@ -31,6 +31,9 @@ class EvolvedCreature {
 
   int predatorPenalty = 50;
   int agingPenalty = 5;
+  PVector previousLocation;
+  PVector birthPlace;
+  float totalDistanceCovered;
 
   //constructor
   EvolvedCreature(PVector l) {
@@ -40,6 +43,9 @@ class EvolvedCreature {
     r = 5;
     lifetime = 0;
     foodsEaten = 0;
+    previousLocation = location.copy();
+    birthPlace = location.copy();
+    totalDistanceCovered = 0;
     birthday = millis();
     health = 1000;
     fitness = 0;
@@ -59,12 +65,14 @@ class EvolvedCreature {
 
   // FITNESS FUNCTION 
   void calcFitness(Food f) {
-    float dist = Float.MAX_VALUE;
-    for(PVector p : f) {
+    float distanceToNearestFood = Float.MAX_VALUE;
+    float distanceFromBirthplace = PVector.dist(location, birthPlace);
+    totalDistanceCovered += PVector.dist(location, previousLocation);
+    for(PVector p : f.getFood()) {
       float d = PVector.dist(location, p);
-      if (d < dist) dist = d;
+      if (d < distanceToNearestFood) distanceToNearestFood = d;
     }
-    fitness = (1/dist) + foodsEaten;
+    fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 300*foodsEaten;
   }
 
   // Run in relation to all the obstacles
@@ -75,7 +83,10 @@ class EvolvedCreature {
       display();
     }
     double[] senses = new double[inputCount];
-    PVector probe = new PVector(0,5*r);
+    PVector probe = velocity.copy();
+    probe.normalize();
+    probe.rotate(-1*2*0.785398);
+    probe.mult(5*r);
     for (int i = 0; i < numFeelers; ++i) {
       senses[i] = 0;
       probe.rotate(0.785398);
@@ -100,7 +111,7 @@ class EvolvedCreature {
      *  System.out.println(sensesString);
      *}
      */
-    senses[numFeelers] = health;
+    senses[numFeelers] = totalDistanceCovered;
     //senses[2*numFeelers] = health;
     //senses[2*numFeelers + 1] = w.getDayTime();
 

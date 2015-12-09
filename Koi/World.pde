@@ -153,6 +153,7 @@ class World {
           if (child != null) creatures.add(child);
         }
       }
+      food = new Food(initialNumberOfCreatures);
     }
 
     displayData();

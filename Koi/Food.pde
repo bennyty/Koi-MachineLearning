@@ -39,7 +39,7 @@ class Food {
   }
   
   // Return the list of food
-  ArrayList getFood() {
+  ArrayList<PVector> getFood() {
     return food; 
   }
 }
