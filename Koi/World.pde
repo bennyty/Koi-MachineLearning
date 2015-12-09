@@ -20,9 +20,9 @@ class World {
 				float w1 = l1.getFitness();
 				float w2 = l2.getFitness();
 				if (w1 - w2 > 0)
-					return 1;
-				if (w1 - w2 < 0)
 					return -1;
+				if (w1 - w2 < 0)
+					return 1;
 				return 0;
 			}
 		};
@@ -148,10 +148,16 @@ class World {
           //if (child != null) creatures.add(child);
         //}
         int QSize = hallOfFame.size() < 5 ? hallOfFame.size() : 5;
+        Iterator<EvolvedCreature> itr = hallOfFame.iterator();
         for (int i = 0; i < QSize; i++) {
-          EvolvedCreature child = hallOfFame.poll().forceBreed();
+          //EvolvedCreature child = hallOfFame.poll().forceBreed();
+          
+          EvolvedCreature parent = itr.next();
+          EvolvedCreature child = parent.forceBreed();
           if (child != null) creatures.add(child);
+          System.out.print(parent.getFitness() + " ");
         }
+        System.out.println();
       }
       food = new Food(initialNumberOfCreatures);
     }

@@ -72,7 +72,7 @@ class EvolvedCreature {
       float d = PVector.dist(location, p);
       if (d < distanceToNearestFood) distanceToNearestFood = d;
     }
-    fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 300*foodsEaten;
+    fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 3000*foodsEaten;
   }
 
   // Run in relation to all the obstacles
@@ -120,6 +120,7 @@ class EvolvedCreature {
     double[] directions = brain.computeOutputs(senses);
     //System.out.println(directions[0] + ", " + directions[1]);
     update(directions[0]<0.5?true:false,directions[1]<0.5?true:false);
+    calcFitness(w.getFood());
 
     // If I hit an edge or an obstacle
     borders();
@@ -165,7 +166,6 @@ class EvolvedCreature {
       // If we are, juice up our strength!
       if (d < r) {
         health += 100; 
-        r++;
         foodsEaten++;
         food.remove(i);
       }
