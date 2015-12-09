@@ -8,7 +8,7 @@ class EvolvedCreature {
   //int numFeelers = 8;
   int numFeelers = 5;
   //int inputCount = 2 + (numFeelers*2); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
-  int inputCount = 1 + (numFeelers); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
+  int inputCount = 1 + (numFeelers) +2; // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
   int hiddenCount = 3; // Lol idk
   int outputCount = 2; // Left/Right + Move/Stay
   double learnRate = .5; // Lol idk
@@ -39,6 +39,7 @@ class EvolvedCreature {
   PVector previousLocation;
   PVector birthPlace;
   float totalDistanceCovered;
+  double[] directions;
 
   //constructor
   EvolvedCreature(PVector l) {
@@ -53,6 +54,9 @@ class EvolvedCreature {
     health = 1000;
     fitness = 0;
     totalDistanceCovered = 0;
+    directions = new double[outputCount];
+    directions[0] = 1;
+    directions[1] = 1;
     brain = new Network(inputCount,hiddenCount,outputCount,learnRate,momentum);
   }
 
@@ -116,12 +120,14 @@ class EvolvedCreature {
      *}
      */
     senses[numFeelers] = totalDistanceCovered;
+    senses[numFeelers+1] = directions[0];
+    senses[numFeelers+2] = directions[1];
     //senses[2*numFeelers] = health;
     //senses[2*numFeelers + 1] = w.getDayTime();
 
     lifetime = millis() - birthday;
 
-    double[] directions = brain.computeOutputs(senses);
+    directions = brain.computeOutputs(senses);
     //System.out.println(directions[0] + ", " + directions[1]);
     update(directions[0]<0.5?true:false,directions[1]<0.5?true:false);
     calcFitness(w.getFood());
