@@ -8,7 +8,7 @@ class EvolvedCreature {
   //int numFeelers = 8;
   int numFeelers = 5;
   //int inputCount = 2 + (numFeelers*2); // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
-  int inputCount = 1 + (numFeelers) +2; // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
+  int inputCount = 1 + (2*numFeelers) +2; // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
   int hiddenCount = 3; // Lol idk
   int outputCount = 2; // Left/Right + Move/Stay
   double learnRate = .5; // Lol idk
@@ -73,14 +73,15 @@ class EvolvedCreature {
 
   // FITNESS FUNCTION 
   void calcFitness(Food f) {
-    float distanceToNearestFood = Float.MAX_VALUE;
-    float distanceFromBirthplace = PVector.dist(location, birthPlace);
-    totalDistanceCovered += PVector.dist(location, previousLocation);
-    for(PVector p : f.getFood()) {
-      float d = PVector.dist(location, p);
-      if (d < distanceToNearestFood) distanceToNearestFood = d;
-    }
-    fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 300*foodsEaten;
+    //float distanceToNearestFood = Float.MAX_VALUE;
+    //float distanceFromBirthplace = PVector.dist(location, birthPlace);
+    //totalDistanceCovered += PVector.dist(location, previousLocation);
+    //for(PVector p : f.getFood()) {
+      //float d = PVector.dist(location, p);
+      //if (d < distanceToNearestFood) distanceToNearestFood = d;
+    //}
+    //fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 300*foodsEaten;
+    fitness = foodsEaten;
   }
 
   // Run in relation to all the obstacles
@@ -100,14 +101,19 @@ class EvolvedCreature {
       senses[i] = 0;
       probe.rotate(0.785398);
       PVector shiftedProbe = PVector.add(probe, location);
+      PVector shiftedProbe2 = PVector.add(PVector.mult(probe, 2),location);
       for (PVector f : w.getFood().getFood()) {
         senses[i] = (PVector.dist(shiftedProbe, f) < 4*r) ? 1:senses[i];
+        senses[i+numFeelers] = (PVector.dist(shiftedProbe2, f) < 6*r) ? 1:senses[i];
       }
       //for (Predator o : w.getPredators()) {
         //senses[i+numFeelers] = (PVector.dist(shiftedProbe, o.location) < 4*r)? 1:senses[i+numFeelers];
       //}
       if (debug && (senses[i] == 1)) {
         ellipse(shiftedProbe.x, shiftedProbe.y, 4*r,4*r);
+      }
+      if (debug && (senses[i+numFeelers] == 1)) {
+        ellipse(shiftedProbe2.x, shiftedProbe2.y, 6*r,6*r);
       }
     }
     /*
@@ -119,9 +125,9 @@ class EvolvedCreature {
      *  System.out.println(sensesString);
      *}
      */
-    senses[numFeelers] = totalDistanceCovered;
-    senses[numFeelers+1] = directions[0];
-    senses[numFeelers+2] = directions[1];
+    senses[2*numFeelers] = totalDistanceCovered;
+    senses[2*numFeelers+1] = directions[0];
+    senses[2*numFeelers+2] = directions[1];
     //senses[2*numFeelers] = health;
     //senses[2*numFeelers + 1] = w.getDayTime();
 

@@ -6,6 +6,7 @@
 
 // The World we live in Has bloops and food
 
+
 class World {
 
   ArrayList<EvolvedCreature> creatures;
@@ -141,12 +142,15 @@ class World {
       if (child != null) creatures.add(child);
     }
     if (debug) {
-      EvolvedCreature BOG = bestOfGen.first();
-      BOG.highlight();
+      try {
+        EvolvedCreature BOG = bestOfGen.first();
+        BOG.highlight();
+      } catch (NoSuchElementException e) { }
     }
 
     //Repopulate from the survivors if population gets low
-    if (creatures.size()<=initialNumberOfCreatures*.2) {
+    //if (creatures.size()<=initialNumberOfCreatures*.2) {
+    if (creatures.size()<=1) {
       outputFile.println(generation + ":" + generationAverageLifeTime/generationDeaths);
       outputFile.flush();
       //outputFile.close();
@@ -178,11 +182,13 @@ class World {
         l = new PVector(random(width),random(height));
         v = new PVector(random(width),random(height));
         creatures.add(new EvolvedCreature(l,v));
-        EvolvedCreature BOG = bestOfGen.first();
-        creatures.add(BOG.forceBreed());
-        bestOfGen.remove(BOG);
+        try{
+          EvolvedCreature BOG = bestOfGen.first();
+          creatures.add(BOG.forceBreed());
+          bestOfGen.remove(BOG);
+        } catch (NoSuchElementException e) { }
       }
-      food = new Food(initialNumberOfCreatures);
+      food = new Food(initialNumberOfCreatures*3);
       bestOfGen.clear();
     }
 
