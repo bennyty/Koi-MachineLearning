@@ -11,7 +11,7 @@ class WanderingState extends State {
     PVector steerForce = steer();
     move(steerForce);
     eat(w.getCreatures());
-    if (e.health < 100) return new HuntingState(w,e);
+    if (e.health < 100 || w.getDayTime() < w.lengthOfDay/w.numSkyColors ) return new HibernatingState(w,e);
     return this;
   }
 

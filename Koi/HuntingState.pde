@@ -1,7 +1,10 @@
 class HuntingState extends State {
 
+  int numEaten;
+
   HuntingState(World w, Predator p) {
     super(w,p);
+    numEaten = 0;
   }
 
   State update() {
@@ -9,6 +12,9 @@ class HuntingState extends State {
     PVector steerForce = steer();
     move(steerForce);
     if (eat(w.getCreatures())) {
+      numEaten++;
+    }
+    if (numEaten > 10) {
       return new WanderingState(w,e);
     }
     return this;
@@ -53,7 +59,7 @@ class HuntingState extends State {
       float d = PVector.dist(e.location, foodLocation);
       if (d < e.r) {
         food.remove(i);
-        e.health += 100;
+        e.health += 200;
         return true;
       }
     }

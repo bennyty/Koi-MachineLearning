@@ -4,6 +4,7 @@ abstract class State {
   final static color HUNTING_COLOR = #DFDA75;
   final static color WANDER_COLOR = #00FFFF;
   final static color CHARGING_COLOR = #FF0000;
+  final static color HIBERNATING_COLOR = #0000FF;
 
   World w;
   Predator e;
