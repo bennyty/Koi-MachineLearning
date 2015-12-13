@@ -20,12 +20,12 @@ boolean looping;
 void setup() {
   size(1280, 720);
 
-  world = new World(100);
-  world.food = new Food(200);
+  //world = new World(100,0,0);
+  world = new World(100, 3, 200);
   doDraw = true;
-  debug = true;
+  debug = false;
   looping = true;
-  //smooth();
+  noSmooth();
 }
 
 void draw() {
@@ -45,11 +45,11 @@ void draw() {
 
 // We can add a creature manually if we so desire
 void mousePressed() {
-  world.birth(mouseX,mouseY); 
+  world.birth(mouseX,mouseY);
 }
 
 void mouseDragged() {
-  world.birth(mouseX,mouseY); 
+  world.birth(mouseX,mouseY);
 }
 
 void keyReleased() {

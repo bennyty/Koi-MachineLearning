@@ -14,6 +14,8 @@ class World {
   Set<EvolvedCreature> hallOfFame;
   Food food;
   int initialNumberOfCreatures;
+  int initialNumberOfPredators;
+  int initialNumberOfFood;
   public Comparator<EvolvedCreature> EVCComparator = new Comparator<EvolvedCreature>() {
 			@Override
 			public int compare(EvolvedCreature l1, EvolvedCreature l2) {
@@ -44,17 +46,24 @@ class World {
   PrintWriter outputFile;
 
   // Constructor
-  World(int num) {
-    initialNumberOfCreatures = num;
+  World(int c, int p, int f) {
+    initialNumberOfCreatures = c;
+    initialNumberOfPredators = p;
+    initialNumberOfFood = f;
     // Start with initial food and creatures
     creatures = new ArrayList<EvolvedCreature>();
     predators = new ArrayList<Predator>();
     hallOfFame = new TreeSet<EvolvedCreature>(EVCComparator);
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < initialNumberOfCreatures; i++) {
       PVector l = new PVector(random(width),random(height));
       PVector v = new PVector(random(width),random(height));
-      creatures.add(new EvolvedCreature(l,v));
+      creatures.add(new EvolvedCreature(l,v,this));
     }
+    for (int i = 0; i < initialNumberOfPredators; i++) {
+      PVector l = new PVector(random(width),random(height));
+      predators.add(new Predator(l,this));
+    }
+    food = new Food(initialNumberOfFood);
     bigBangTime = millis();
     startOfTheDay = 0;
     generation = 0;
@@ -82,9 +91,9 @@ class World {
     if (time < lengthOfDay/numSkyColors) {
       return lerpColor(skyBlue, sunsetRed, map(time, 0, lengthOfDay/numSkyColors, 0.0, 1.0));
     } else if (time < 2*lengthOfDay/numSkyColors) {
-      return lerpColor(sunsetRed, midnightBlue, map(time, 0, 2*lengthOfDay/numSkyColors, 0.0, 1.0));
+      return lerpColor(sunsetRed, midnightBlue, map(time, lengthOfDay/numSkyColors, 2*lengthOfDay/numSkyColors, 0.0, 1.0));
     } else {
-      return lerpColor(midnightBlue, skyBlue, map(time, 0, lengthOfDay, 0.0, 1.0));
+      return lerpColor(midnightBlue, skyBlue, map(time, 2*lengthOfDay/numSkyColors, lengthOfDay, 0.0, 1.0));
     }
   }
 
@@ -107,7 +116,7 @@ class World {
   // Make a new creature
   void birth(float x, float y) {
     PVector l = new PVector(x,y);
-    EvolvedCreature baby = new EvolvedCreature(l);
+    EvolvedCreature baby = new EvolvedCreature(l,this);
     baby.velocity = new PVector(random(-1,1),random(-1,1));
     creatures.add(baby);
   }
@@ -117,11 +126,16 @@ class World {
     // Deal with food
     food.run();
 
-    // Cycle through the ArrayList backwards b/c we are deleting
+    // Cycle through the ArrayList of creatures backwards b/c we are deleting
+    for (int i = predators.size() - 1; i >= 0; i--) {
+      Predator p = predators.get(i);
+      p.run();
+    }
+    // Cycle through the ArrayList of creatures backwards b/c we are deleting
     for (int i = creatures.size() - 1; i >= 0; i--) {
       // All bloops run and eat
       EvolvedCreature b = creatures.get(i);
-      b.run(this);
+      b.run();
       b.eat(food);
       if (debug) {
         fill(0);
@@ -141,6 +155,7 @@ class World {
       EvolvedCreature child = b.reproduce();
       if (child != null) creatures.add(child);
     }
+    //Highlight the best of each generation
     if (debug) {
       try {
         EvolvedCreature BOG = bestOfGen.first();
@@ -151,12 +166,23 @@ class World {
     //Repopulate from the survivors if population gets low
     //if (creatures.size()<=initialNumberOfCreatures*.2) {
     if (creatures.size()<=1) {
-      outputFile.println(generation + ":" + generationAverageLifeTime/generationDeaths);
+      //outputFile.println(generation + ":" + generationAverageLifeTime/generationDeaths);
+      predators.clear();
+      for (int i = 0; i < initialNumberOfPredators; i++) {
+        PVector l = new PVector(random(width),random(height));
+        predators.add(new Predator(l,this));
+      }
+      outputFile.println(generation + "," + bestOfGen.first().getFitness());
       outputFile.flush();
       //outputFile.close();
       generationDeaths = 0;
       generationAverageLifeTime = 0;
       generation++;
+      if (creatures.size() == 1) {
+        creatures.add(creatures.get(0).forceBreed());
+        creatures.add(creatures.get(0).forceBreed());
+        creatures.add(creatures.get(0).forceBreed());
+      }
       while (creatures.size() <= initialNumberOfCreatures) {
         //for (int i = creatures.size() - 1; i >= 0; i--) {
           //EvolvedCreature child = creatures.get(i).forceBreed();
@@ -176,19 +202,19 @@ class World {
         System.out.println();
         hallOfFame.clear();
         hallOfFame = tempQ;
-        PVector l = new PVector(random(width),random(height));
-        PVector v = new PVector(random(width),random(height));
-        creatures.add(new EvolvedCreature(l,v));
-        l = new PVector(random(width),random(height));
-        v = new PVector(random(width),random(height));
-        creatures.add(new EvolvedCreature(l,v));
+        //PVector l = new PVector(random(width),random(height));
+        //PVector v = new PVector(random(width),random(height));
+        //creatures.add(new EvolvedCreature(l,v));
+        //l = new PVector(random(width),random(height));
+        //v = new PVector(random(width),random(height));
+        //creatures.add(new EvolvedCreature(l,v));
         try{
           EvolvedCreature BOG = bestOfGen.first();
           creatures.add(BOG.forceBreed());
           bestOfGen.remove(BOG);
         } catch (NoSuchElementException e) { }
       }
-      food = new Food(initialNumberOfCreatures*3);
+      food = new Food(initialNumberOfFood);
       bestOfGen.clear();
     }
 

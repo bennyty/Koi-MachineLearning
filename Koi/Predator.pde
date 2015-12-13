@@ -1,94 +1,81 @@
 class Predator {
-  PVector location;
-  PVector velocity;
-  PVector acceleration;
+    PVector location;
+    PVector velocity;
+    PVector acceleration;
 
-  float r;
-  int health;
+    float r;
+    color fillColor;
+    color edgeColor;
 
-  float maxspeed = 6.0;
-  float maxforce = 1.0;
+    int health;
 
-  Predator(PVector l) {
-    location = l.copy();
-    velocity = new PVector();
-    acceleration = new PVector();
-    r = 2;
-    health = 1000;
-  }
+    float maxspeed = 2.0;
+    float maxforce = 0.5;
 
-  void run(World w) {
-    /*
-     *double[] senses = new double[inputCount];
-     *PVector probe = new PVector(0,2*r);
-     *for (int i = 0; i < numFeelers; ++i) {
-     *  senses[i] = 0;
-     *  probe.rotate(0.785398);
-     *  for (Predator o : w.getPredators()) {
-     *    senses[i] = PVector.dist(location.add(probe), o.location) < 2*r)? senses[i]:1;
-     *  }
-     *  for (Food o : w.getFood()) {
-     *    senses[i+numFeelers] = PVector.dist(location.add(probe), o.location) < 2*r)? senses[i+8]:1;
-     *  }
-     *}
-     */
+    State state;
 
-    update();
-    // If I hit an edge or an obstacle
-    if (borders()) {
-      health -= 5;
+    World w;
+
+    Predator(PVector l, World w) {
+        this.w = w;
+        this.state = new HuntingState(w,this);
+        location = l.copy();
+        velocity = new PVector( random(width), random(height) ).normalize().mult(maxspeed);
+        acceleration = new PVector();
+        r = 7;
+        health = 1000;
     }
-    // Draw me!
-    display();
-  }
 
-  boolean borders() {
-    if ((location.x < 0) || (location.y < 0) || (location.x > width) || (location.y > height)) {
-      return true;
-    } else {
-      return false;
+    void run() {
+        // Move / steer / change state
+        this.state = state.update();
+        this.health -= 2;
+        // If I hit an edge, stop
+        borders();
+        // Draw me!
+        display();
     }
-  }
 
-  void update() {
-    // A little Reynolds steering here
-    PVector desired = PVector.mult(velocity, 1);
-    desired.normalize();
-    desired.rotate((random(2)<1?false:true) ? -0.785398:0.785398);
-    desired.mult(maxspeed);
+    // If I hit an edge, stop
+    void borders() {
+        float padding = 5;
+        if (location.x < 0-padding) {
+            location.x = 0-padding;
+        } else if (location.y < 0-padding) {
+            location.y = 0-padding;
+        } else if (location.x > width+padding) {
+            location.x = width+padding;
+        } else if (location.y > height+padding) {
+            location.y = height+padding;
+        }
+    }
 
-    PVector steer = PVector.sub(desired,velocity);
-    acceleration.add(steer);
-    acceleration.limit(maxforce);
+    void setFillColor(color c) {
+        fillColor = c;
+    }
 
-    velocity.add(acceleration);
-    velocity.limit(maxspeed);
-    location.add(velocity);
-    acceleration.mult(0);
-  }
+    void setEdgeColor(color c) {
+        edgeColor = c;
+    }
 
-  void display() {
-    //fill(0,150);
-    //stroke(0);
-    //ellipse(location.x,location.y,r,r);
-    float theta = velocity.heading() + PI/2;
-    fill(200,100);
-    stroke(204, 102, 0);
-    pushMatrix();
-    translate(location.x,location.y);
-    rotate(theta);
-    beginShape(TRIANGLES);
-    vertex(0, -r*2);
-    vertex(-r, r*2);
-    vertex(r, r*2);
-    endShape();
-    popMatrix();
-  }
+    void display() {
+        float theta = velocity.heading() + PI/2;
+        fill(fillColor);
+        stroke(edgeColor);
+        pushMatrix();
+        translate(location.x,location.y);
+        rotate(theta);
+        beginShape(TRIANGLES);
+        vertex(0, -r*2);
+        vertex(-r, r*2);
+        vertex(r, r*2);
+        endShape();
+        popMatrix();
+    }
 
-  void highlight() {
-    stroke(0);
-    fill(255,0,0,100);
-    ellipse(location.x,location.y,16,16);
-
-  }
+    void highlight() {
+        stroke(0);
+        fill(255,0,0,100);
+        ellipse(location.x,location.y,16,16);
+    }
 }

@@ -11,14 +11,15 @@ class EvolvedCreature {
   int inputCount = 1 + (2*numFeelers) +2; // 8 numFeelers * 2 types (food and danger) + 1 time + 1 health
   int hiddenCount = 3; // Lol idk
   int outputCount = 2; // Left/Right + Move/Stay
-  double learnRate = .5; // Lol idk
-  double momentum = .5; // Lol idk
+  double learnRate = .8;
+  double momentum = .3;
 
   // All of our physics stuff
   PVector location;
   PVector velocity;
   PVector acceleration;
 
+  World w;
   float r;
   float lifetime;
   float birthday;
@@ -30,11 +31,11 @@ class EvolvedCreature {
   Network brain;
 
   // Could make this part of DNA??)
-  float maxspeed = 6.0;
+  float maxspeed = 4.0;
   float maxforce = 1.0;
 
   int predatorPenalty = 50;
-  int agingPenalty = 4;
+  int agingPenalty = 3;
 
   PVector previousLocation;
   PVector birthPlace;
@@ -42,11 +43,12 @@ class EvolvedCreature {
   double[] directions;
 
   //constructor
-  EvolvedCreature(PVector l) {
+  EvolvedCreature(PVector l, World w) {
     acceleration = new PVector();
     velocity = new PVector(random(-1,1), random(-1,1));
     location = l.get();
     birthPlace = location.get();
+    this.w = w;
     r = 5;
     lifetime = 0;
     foodsEaten = 0;
@@ -60,33 +62,34 @@ class EvolvedCreature {
     brain = new Network(inputCount,hiddenCount,outputCount,learnRate,momentum);
   }
 
-  EvolvedCreature(PVector l, double[] m, double[] t) {
-    this(l);
+  EvolvedCreature(PVector l, World w, double[] m, double[] t) {
+    this(l, w);
     brain.setThresholds(t);
     brain.setMatrix(m);
   }
 
-  EvolvedCreature(PVector loc, PVector vel) {
-    this(loc);
+  EvolvedCreature(PVector loc, PVector vel, World w) {
+    this(loc, w);
     velocity = vel;
   }
 
-  // FITNESS FUNCTION 
+  // FITNESS FUNCTION
   void calcFitness(Food f) {
-    //float distanceToNearestFood = Float.MAX_VALUE;
-    //float distanceFromBirthplace = PVector.dist(location, birthPlace);
-    //totalDistanceCovered += PVector.dist(location, previousLocation);
-    //for(PVector p : f.getFood()) {
-      //float d = PVector.dist(location, p);
-      //if (d < distanceToNearestFood) distanceToNearestFood = d;
-    //}
-    //fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 300*foodsEaten;
-    fitness = foodsEaten;
+    float distanceToNearestFood = Float.MAX_VALUE;
+    float distanceFromBirthplace = PVector.dist(location, birthPlace);
+    totalDistanceCovered += PVector.dist(location, previousLocation);
+    for(PVector p : f.getFood()) {
+      float d = PVector.dist(location, p);
+      if (d < distanceToNearestFood) distanceToNearestFood = d;
+    }
+    fitness = (50/distanceToNearestFood) + .1*totalDistanceCovered + distanceFromBirthplace + 300*foodsEaten;
+    //fitness = foodsEaten;
+    //fitness = .1*distanceFromBirthplace + foodsEaten;
   }
 
   // Run in relation to all the obstacles
   // If I'm stuck, don't bother updating or checking for intersection
-  void run(World w) {
+  void run() {
     //if (!stopped) {
     if(doDraw) {
       display();
@@ -101,7 +104,7 @@ class EvolvedCreature {
       senses[i] = 0;
       probe.rotate(0.785398);
       PVector shiftedProbe = PVector.add(probe, location);
-      PVector shiftedProbe2 = PVector.add(PVector.mult(probe, 2),location);
+      PVector shiftedProbe2 = PVector.add(PVector.mult(probe, 4),location);
       for (PVector f : w.getFood().getFood()) {
         senses[i] = (PVector.dist(shiftedProbe, f) < 4*r) ? 1:senses[i];
         senses[i+numFeelers] = (PVector.dist(shiftedProbe2, f) < 6*r) ? 1:senses[i];
@@ -138,16 +141,13 @@ class EvolvedCreature {
     update(directions[0]<0.5?true:false,directions[1]<0.5?true:false);
     calcFitness(w.getFood());
 
-    // If I hit an edge or an obstacle
+    // If I hit an edge or a predator
     borders();
     if (obstacles(w.predators)) {
       health -= predatorPenalty;
     } else {
       health -= agingPenalty;
     }
-    //}
-    // Draw me!
-    //display();
   }
 
   void update(boolean move, boolean turnRight) {
@@ -160,10 +160,10 @@ class EvolvedCreature {
       desired.rotate(turnRight ? -0.785398 : 0.785398);
       desired.mult(maxspeed);
 
-      if(debug) {
-        line(location.x, location.y, location.x + velocity.x, location.y + velocity.y);
-        line(location.x, location.y, location.x + desired.x, location.y + desired.y);
-      }
+      //if(debug) {
+        //line(location.x, location.y, location.x + velocity.x, location.y + velocity.y);
+        //line(location.x, location.y, location.x + desired.x, location.y + desired.y);
+      //}
 
       PVector steer = PVector.sub(desired,velocity);
       acceleration.add(steer);
@@ -186,7 +186,7 @@ class EvolvedCreature {
       float d = PVector.dist(location, foodLocation);
       // If we are, juice up our strength!
       if (d < r) {
-        health += 100; 
+        health += 200;
         //r++;
         foodsEaten++;
         food.remove(i);
@@ -197,20 +197,31 @@ class EvolvedCreature {
   // Did I hit an edge?
   void borders() {
     float padding = 5;
+    /*
+     *if (location.x < 0-padding) {
+     *  location.x = width+padding;
+     *} else if (location.y < 0-padding) {
+     *  location.y = height+padding;
+     *} else if (location.x > width+padding) {
+     *  location.x = 0-padding;
+     *} else if (location.y > height+padding) {
+     *  location.y = 0-padding;
+     *}
+     */
     if (location.x < 0-padding) {
-      location.x = width+padding;
-    } else if (location.y < 0-padding) {
-      location.y = height+padding;
-    } else if (location.x > width+padding) {
       location.x = 0-padding;
-    } else if (location.y > height+padding) {
+    } else if (location.y < 0-padding) {
       location.y = 0-padding;
+    } else if (location.x > width+padding) {
+      location.x = width+padding;
+    } else if (location.y > height+padding) {
+      location.y = height+padding;
     }
   }
 
   boolean obstacles(ArrayList<Predator> predators) {
     for (Predator p : predators) {
-      if (PVector.dist(p.location,location) < r) {
+      if (PVector.dist(p.location,location) < 3*r) {
         return true;
       }
     }
@@ -231,8 +242,8 @@ class EvolvedCreature {
       // Child DNA can mutate
       m = brain.mutate(0.01, m);
       t = brain.mutate(0.01, t);
-      return new EvolvedCreature(location,m,t);
-    } 
+      return new EvolvedCreature(location,w,m,t);
+    }
     else {
       return null;
     }
@@ -278,13 +289,16 @@ class EvolvedCreature {
  *    }
  *    System.out.println();
  */
-    return new EvolvedCreature(new PVector(random(width),random(height)),m,t);
+    return new EvolvedCreature(new PVector(random(width),random(height)),w,m,t);
   }
 
   void display() {
     //fill(0,150);
     //stroke(0);
     //ellipse(location.x,location.y,r,r);
+    if (debug) {
+      line(location.x, location.y, birthPlace.x, birthPlace.y);
+    }
     float theta = velocity.heading() + PI/2;
     fill(200,map(health,0,1200,0,255));
     stroke(0);
