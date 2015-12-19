@@ -1,6 +1,7 @@
 class HuntingState extends State {
 
   int numEaten;
+  int chargeLevel;
 
   HuntingState(World w, Predator p) {
     super(w,p);
@@ -36,6 +37,10 @@ class HuntingState extends State {
         desired.normalize();
         desired.mult(e.maxspeed);
         PVector steer = PVector.sub(desired,e.velocity);
+        if (chargeLevel < 100){
+          chargeLevel++;
+          steer.mult(0.1);
+        }
         return steer;
     } else {
       return new PVector(width/2, height/2);
